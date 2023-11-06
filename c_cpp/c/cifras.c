@@ -10,14 +10,15 @@
 #endif
 
 int main(){
+  int sys_clr;
 	struct par_plain_cipher{
 		char plaintext[100];
-		char ciphertxt[100];
+		char ciphertxt[250];
 	} par;
 	char cifras[6][21] = {"César", "Atbash", "Affine", "Morse", "Vigenère", "Quadrado de Políbio"};
 	FILE *fptr = fopen("cifras.txt", "a");
 	while (1){
-	printf("Selecione uma opção para cifrar sua frase:\n\
+    printf("Selecione uma opção para cifrar sua frase:\n\
 1. César;\n\
 2. Atbash;\n\
 3. Affine;\n\
@@ -30,6 +31,7 @@ int main(){
 	
 	while (1){
 		int input_test = scanf("%d", &choice);
+    getchar();
 		
 		if (!(input_test) || ((choice < 0) || (choice > 6))){
 			
@@ -48,22 +50,23 @@ int main(){
 		}
 	}
 	if (SYS_OS == "win"){
-				system("cls");
+		sys_clr = system("cls");
 	}
 	else{
-		system("clear");
+    sys_clr = system("clear");
 	}
 	printf("%s\n", cifras[choice-1]);
 	char frase[100];
 	printf("digite a frase: ");
-	scanf("%[^\n]", frase);
+	int teste_frase = scanf("%[^\n]", frase);
 	strcpy(par.plaintext, frase);
+  getchar();
 	
 	if (SYS_OS == "win"){
-		system("cls");
+    sys_clr = system("cls");
 	}
 	else{
-		system("clear");
+    sys_clr = system("clear");
 	}
 	
 	switch (choice){
@@ -117,10 +120,10 @@ int main(){
 			int chave_a, chave_b;
 			int teste_scan = scanf("%d %d", &chave_a, &chave_b);
 			if (SYS_OS == "win"){
-				system("cls");
+        sys_clr = system("cls");
 			}
 			else{
-				system("clear");
+        sys_clr = system("clear");
 			}
 			if (teste_scan != 2){
 				printf("Insira valores válidos.\n");
@@ -149,10 +152,11 @@ int main(){
 			strcpy(par.ciphertxt, frase);
 			break;
 		
-		case 4:;
-			char morse[36][6] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--..", "-----", ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----."};
-			char ciphertxt[500] = "";
+		case 4:
 			printf("A frase \"%s\" em %s é: ", frase, cifras[choice-1]);
+      char morse[36][6] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--..", "-----", ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----."};
+      char ciphertxt[250] = "";
+      
 			for (int i = 0; i < strlen(frase); i++){
 				int letter = (int)tolower(frase[i]);
 				
@@ -171,6 +175,7 @@ int main(){
 				}
 			}
 			printf("%s\n", ciphertxt);
+      strcpy(par.ciphertxt, ciphertxt);
 			break;
 		
 		case 5:
@@ -178,15 +183,17 @@ int main(){
 			printf("Digite a palavra a ser usada como chave para cifrar a frase: ");
 			
 			char chave[46];
-			if (!(scanf("%s", chave))){
+      int teste_vig = scanf("%s", chave);
+      getchar();
+			if (!teste_vig){
 				printf("Digite uma chave válida.\n");
 				break;
 			}
 			if (SYS_OS == "win"){
-				system("cls");
+        sys_clr = system("cls");
 			}
 			else{
-				system("clear");
+        sys_clr = system("clear");
 			}
 			for (int i = 0; i < strlen(chave); i++){
 				chave[i] = tolower(chave[i]);
@@ -257,10 +264,10 @@ int main(){
 		break;
 	}
 	if (SYS_OS == "win"){
-		system("cls");
+    sys_clr = system("cls");
 	}
 	else{
-		system("clear");
+    sys_clr = system("clear");
 	}
 	}
 	return 0;
