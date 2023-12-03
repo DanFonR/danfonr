@@ -70,7 +70,15 @@ int main(int argc, char *argv[]){
       break;
 
     case 2:
+      char options[4][5] = {"add", "sub", "mult", "div"};
+      int among;
       
+      for (int i = 0; i < 4; i++) {
+        if (argv[1] == options[i]) {
+          among = 1;
+          break;
+        }
+      }
   }
   
   return 0;
