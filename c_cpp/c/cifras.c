@@ -1,9 +1,13 @@
-/* Este programa cifra frases em 6 diferentes cifras de substituição, armazena o resultado em uma struct,
-e loga o resultado em um arquivo de texto.*/
+/*
+Este programa cifra frases em 6 diferentes cifras de substituicao/transposicao,
+armazena o resultado em uma struct,
+e loga o resultado em um arquivo de texto
+Codigo produzido para trabalho de Algoritmos e Programacao de Computadores I
+*/
 
-/*Para cada cifra, foram testadas 20 frases diferentes.
-Código por Dannyel Fontenele Ribeiro - (2322130061)
-Testagem por Victor Cardozo Pedrosa - (2322130027)
+/*
+Codigo por Dannyel Fontenele Ribeiro
+Testagem por Victor Cardozo Pedrosa
 */
 
 #include <stdio.h>
@@ -12,275 +16,324 @@ Testagem por Victor Cardozo Pedrosa - (2322130027)
 #include <ctype.h>
 
 #ifdef _WIN32
-#define sys_clr() system("cls")
+#define sys_clr() (void) system("cls")
 #else
-#define sys_clr() system("clear")
+#define sys_clr() (void) system("clear")
 #endif
+#define PLAINSIZ BUFSIZ / 2
 
-int main(){
-  int test_sys_clr;
-	struct par_plain_cipher {
-		char plaintext[100];
-		char ciphertxt[250];
-	} par;
-	char cifras[6][21] = {"César", "Atbash", "Affine", "Morse", "Vigenère", "Quadrado de Políbio"};
-	FILE *fptr = fopen("cifras.txt", "a");
-  
-	while (1) {
-    printf("Selecione uma opção para cifrar sua frase:\n\
-1. César;\n\
+char *cesar(char frase[]) {
+/*
+Sendo A = 1 e Z = 26, some 3 ao valor da letra
+Se maior que 26, tire 26. (Ex.: A -> D, Z -> C, M -> P)
+*/
+  for (int i = 0; i < strlen(frase); i++) {
+    char letter = frase[i];
+
+    if (isupper(letter))
+      frase[i] = (letter + 3 - 'A') % 26 + 'A';
+    else if (islower(letter))
+      frase[i] = (letter + 3 - 'a') % 26 + 'a';
+    else continue;
+  }
+  return frase;
+}
+
+char *atbash(char frase[]) {
+/*
+Troca das posicoes das letras
+(Ex.: A -> Z, Z -> A, M -> N, N -> M)
+*/
+  for (int i = 0; i < strlen(frase); i++) {
+    char letter = frase[i];
+
+    if (isupper(letter))
+      frase[i] = 'A' + 'Z' - letter;
+    else if (islower(letter))
+      frase[i] = 'a' + 'z' - letter;
+    else continue;
+  }
+  return frase;
+}
+
+char *affine(char frase[], int chave_a, int chave_b) {
+/*
+Posicao das letras comecando em 0, cifra-se frase usando a formula
+(chave_a * letra + chave_b) MOD 26
+*/
+  for (int i = 0; i < strlen(frase); i++) {
+    char letter = frase[i];
+
+    if (isupper(letter))
+      frase[i] = ((chave_a * (letter % 'A') + chave_b) % 26) + 'A';
+    else if (97 <= letter && letter <= 122)
+      frase[i] = ((chave_a * (letter % 'a') + chave_b) % 26) + 'a';
+    else continue;
+  }
+  return frase;
+}
+
+char *morse(char frase[]) {
+  char morse[36][6] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....",
+                       "..", ".---", "-.-", ".-..", "--", "-.", "---", ".--.",
+                       "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-",
+                       "-.--", "--..", "-----", ".----", "..---", "...--",
+                       "....-", ".....", "-....", "--...", "---..", "----."};
+  static char ciphertxt[BUFSIZ] = "";
+
+  for (int i = 0; i < strlen(frase); i++) {
+    char letter = tolower(frase[i]);
+    
+    if (strlen(ciphertxt) >= BUFSIZ - 100)
+      break;
+    if (islower(letter)) {
+      strcat(ciphertxt, morse[letter % 97]);
+      strcat(ciphertxt, " ");
+    }
+    else if (isdigit(letter)) {
+      strcat(ciphertxt, morse[letter - 22]);
+      strcat(ciphertxt, " ");
+    }
+    else if (letter == ' ') {
+      strcat(ciphertxt, "/ ");
+    }
+  }
+
+  ciphertxt[strlen(ciphertxt) - 1] = '\0';
+
+  return ciphertxt;
+}
+
+char *vigenere(char frase[], char *chave) {
+/*
+Parear frase com chave (repetir chave se necessario)
+Soma da posicao das letras - 1, tirar 26 se maior que 26
+*/
+  int delta = 0; /*offset para parear letras corretamente*/
+  int len_chave = strlen(chave);
+
+  for (int i = 0; i < strlen(frase); i++) {
+    unsigned char cripto = (frase[i] + chave[(i - delta) % len_chave] - 1);
+
+    if (islower(frase[i])) {
+      if (cripto > 218)
+        cripto -= 122;
+      else
+        cripto -= 96;
+
+      frase[i] = cripto;
+    }
+    else if (isupper(frase[i])) {
+      if (cripto >= 187)
+        cripto -= 122;
+      else
+        cripto -= 96;
+
+      frase[i] = cripto;
+    }
+    else delta++;
+  }
+  return frase;
+}
+
+char *polibio(char frase[]) {
+/*
+Uma das versoes que se baseia em uma matriz 5x5 do alfabeto, tal que I == J
+*/
+  char polybius[26][3] = {"11", "12", "13", "14", "15", "21", "22", "23",
+                          "24", "24", "25", "31", "32", "33",
+                          "34", "35", "41", "42", "43", "44", "45", "51",
+                          "52", "53", "54", "55"};
+  static char poly_ciphertxt[250] = "";
+
+  for (int i = 0; i < strlen(frase); i++) {
+    char letter = tolower(frase[i]);
+
+    if (isalpha(letter)) {
+      strcat(poly_ciphertxt, polybius[letter % 'a']);
+      strcat(poly_ciphertxt, " ");
+    }
+    else if (letter == 32)
+      strcat(poly_ciphertxt, "/ ");
+  }
+
+  poly_ciphertxt[strlen(poly_ciphertxt) - 1] = '\0';
+
+  return poly_ciphertxt;
+}
+
+int main() {
+  struct {
+    char plaintext[PLAINSIZ];
+    char ciphertxt[BUFSIZ];
+  } par_plain_cipher;
+  char cifras[6][21] = {"Cesar", "Atbash", "Affine",
+                        "Morse", "Vigenere", "Quadrado de Polibio"};
+  FILE *fptr = fopen("cifras.txt", "a");
+
+  if (!fptr) {
+    perror("Um erro ocorreu ao criar/acessar logs de frases");
+    exit(EXIT_FAILURE);
+  }
+
+  while (1) {
+    sys_clr();
+    puts("Selecione uma opcao para cifrar sua frase:\n\
+1. Cesar;\n\
 2. Atbash;\n\
 3. Affine;\n\
 4. Morse;\n\
-5. Vigenère;\n\
-6. Quadrado de Políbio;\n\
-0. Sair do programa.\n");
-    
-    int choice;
-    
+5. Vigenere;\n\
+6. Quadrado de Polibio;\n\
+9. Limpar logs de frases;\n\
+0. Sair do programa");
+
+    int choice = 0;
+
     while (1) {
-      int input_test = scanf("%d", &choice);
+      int input_test = scanf("%2d", &choice);
+
       getchar();
-      
-		  if (!(input_test) || ((choice < 0) || (choice > 6))) {
-        printf("Opção inválida. Tente novamente.\n");
-        fflush(stdin);
-		  }
-		  else if (choice == 0) {
-		    printf("Ok. Até mais.\n");
+
+      if (choice == 9) {
+        freopen(NULL, "w", fptr);
+        puts("Log limpo");
+        printf("Proxima opcao: ");
+      }
+      else if (!(input_test) || ((choice < 0) || (choice > 6)))
+        printf("Opcao invalida. Tente novamente.\n");
+      else if (choice == 0) {
+        sys_clr();
+        puts("Ok. Ate mais.");
         fclose(fptr);
-        return 0;
-		  }
-  		else{
-  			fflush(stdin);
-  		  break;
-  		}
+        exit(EXIT_SUCCESS);
+      }
+      else break;
     }
 
-    test_sys_clr = sys_clr();
-    
-  	printf("%s\n", cifras[choice - 1]);
-    
-  	char frase[100];
-    
-  	printf("digite a frase: ");
-    
-  	int teste_frase = scanf("%[^\n]", frase);
-    
-  	strcpy(par.plaintext, frase);
-    getchar();
-    
-    test_sys_clr = sys_clr();
-    
+    sys_clr();
+    puts(cifras[choice - 1]);
+
+    char frase[PLAINSIZ];
+    printf("digite a frase: ");
+    fgets(frase, PLAINSIZ, stdin);
+    frase[strlen(frase) - 1] = '\0';
+    strcpy(par_plain_cipher.plaintext, frase);
+
     switch (choice) {
-      case 1: // César: deslocamento de valor 3 (Ex.: A (pos 1) -> D (pos 4), Z (pos 26) -> C (pos 3), F (pos 6) -> I (pos 9))
-        printf("A frase \"%s\" em %s é: ", frase, cifras[choice - 1]);
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int letter = (int)frase[i];
-          
-          if (65 <= letter && letter <= 90) {
-            frase[i] = (char)((letter + 2 - 64) % 26 + 65);
-          }
-          else if (97 <= letter && letter <= 122) {
-            frase[i] = (char)((letter + 2 - 96) % 26 + 97);
-          }
-          else {
-            frase[i] = (char)(letter);
-          }
-        }
-        
-        printf("%s\n", frase);
-        strcpy(par.ciphertxt, frase);
+      case 1:
+        printf("A frase \"%s\" em Cesar se torna: ", frase);
+        cesar(frase);
+        puts(frase);
+        strcpy(par_plain_cipher.ciphertxt, frase);
+
         break;
-      
-      case 2: // Atbash: troca das posições das letras (Ex.: A -> Z, M -> N, N -> M)
-        printf("A frase \"%s\" em %s é: ", frase, cifras[choice - 1]);
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int letter = (int)frase[i];
-          
-          if (65 <= letter && letter <= 90) {
-            frase[i] = (char)(-letter + 155);
-          }
-          else if (97 <= letter && letter <= 122) {
-            frase[i] = (char)(-letter + 219);
-          }
-          else {
-            frase[i] = (char)letter;
-          }
-        }
-        
-        printf("%s\n", frase);
-        strcpy(par.ciphertxt, frase);
+
+      case 2:
+        printf("A frase \"%s\" em Atbash se torna: ", frase);
+        atbash(frase);
+        puts(frase);
+        strcpy(par_plain_cipher.ciphertxt, frase);
+
         break;
-      
-      case 3: // Posição das letras começando em 0, cifra-se frase usando (chave_a * letra + chave_b) mod 26.
-        printf("Affine\n");
+
+      case 3:
+        sys_clr();
+        puts("Affine");
         printf("Insira valores inteiros para as chaves A e B: ");
-        
+
         int chave_a, chave_b;
-        int teste_scan = scanf("%d %d", &chave_a, &chave_b);
-        
+        int teste_scan = scanf("%20d %20d", &chave_a, &chave_b);
+
         getchar();
-        
-        test_sys_clr = sys_clr();
-        
+
         if (teste_scan != 2) {
-          printf("Insira valores válidos.\n");
+          puts("Insira valores validos.");
+
           break;
         }
-        
+
         if (!(chave_a % 2 && chave_a % 13)) {
-          printf("Sua chave A é inválida. Entre com um número cujo MDC entre ele e 26 seja 1.\n");
+          puts("Chave A invalida. O MDC entre ela e 26 deve ser 1.");
+
           break;
         }
-        
-        printf("A frase \"%s\" em %s é: ", frase, cifras[choice - 1]);
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int letter = (int)frase[i];
-          
-          if (65 <= letter && letter <= 90) {
-            frase[i] = (char)(((chave_a * (letter % 65) + chave_b) % 26) + 65);
-          }
-          else if (97 <= letter && letter <= 122) {
-            frase[i] = (char)(((chave_a * (letter % 97) + chave_b) % 26) + 97);
-          }
-          else {
-            frase[i] = (char)letter;
-          }
-        }
-        
-        printf("%s\n", frase);
-        strcpy(par.ciphertxt, frase);
+
+        printf("A frase \"%s\" em Affine se torna: ", frase);
+        affine(frase, chave_a, chave_b);
+        puts(frase);
+        strcpy(par_plain_cipher.ciphertxt, frase);
+
         break;
-      
+
       case 4:
-        printf("A frase \"%s\" em %s é: ", frase, cifras[choice - 1]);
-        
-        char morse[36][6] = {".-", "-...", "-.-.", "-..", ".", "..-.", "--.", "....", "..", ".---", "-.-", ".-..", 
-        "--", "-.", "---", ".--.", "--.-", ".-.", "...", "-", "..-", "...-", ".--", "-..-", "-.--", "--..", "-----", 
-        ".----", "..---", "...--", "....-", ".....", "-....", "--...", "---..", "----."};
-        char ciphertxt[250] = "";
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int letter = (int)tolower(frase[i]);
-          
-          if (97 <= letter && letter <= 122) {
-            strcat(ciphertxt, morse[letter % 97]);
-            strcat(ciphertxt, " ");
-          }
-          else if (48 <= letter && letter <= 57) {
-            strcat(ciphertxt, morse[letter - 22]);
-            strcat(ciphertxt, " ");
-          }
-          else if (letter == 32) {
-            strcat(ciphertxt, "/ ");
-          }
-        }
-        
-        printf("%s\n", ciphertxt);
-        strcpy(par.ciphertxt, ciphertxt);
+        char *em_morse = morse(frase);
+
+        printf("A frase \"%s\" em Morse se torna: ", frase);
+        puts(em_morse);
+        strcpy(par_plain_cipher.ciphertxt, em_morse);
+
         break;
-      
-      case 5: // Parear frase com chave (repetir chave se necessário). Soma da posição das letras -1
-        printf("Vigenère\n");
-        printf("Digite a palavra a ser usada como chave para cifrar a frase: ");
-        
-        char chave[46];
-        int teste_vig = scanf("%s", chave);
-        
+
+      case 5:
+        sys_clr();
+        puts("Vigenere");
+        printf("Digite uma palavra-chave: ");
+
+        char chave[51]; /*Palavras de ate 50 letras, sem acentos ou ce-cedilha*/
+        int teste_vig = scanf("%50s", chave);
+
         getchar();
-        
+
         if (!teste_vig) {
-          printf("Digite uma chave válida.\n");
-          break;
+          erro:
+            puts("Digite uma chave valida.");
+
+            break;
         }
-        
-        test_sys_clr = sys_clr();
-        
+
         for (int i = 0; i < strlen(chave); i++) {
+          if (!isalpha(chave[i]))
+            goto erro;
+
           chave[i] = tolower(chave[i]);
+
         }
-        
-        int delta = 0;
-        
-        printf("A frase \"%s\" em %s cifrada com a chave \"%s\" é: ", frase, cifras[choice - 1], chave);
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int cripto = (frase[i] + chave[(i - delta) % strlen(chave)] - 1);
-          
-          if ((97 <= frase[i] && frase[i] <= 122)) {
-            if (cripto > 218) {
-              cripto -= 122;
-            }
-            else {
-              cripto -= 96;
-            }
-            
-            frase[i] = (char)cripto;
-          }
-          else if ((65 <= frase[i] && frase[i] <= 90)) {
-            if (cripto >= 187) {
-              cripto -= 122;
-            }
-            else {
-              cripto -= 96;
-            }
-            
-            frase[i] = (char)cripto;
-          }
-          else {
-            delta++;
-          }
-        }
-        
-        printf("%s\n", frase);
-        strcpy(par.ciphertxt, frase);
+
+        printf("A frase \"%s\" em Vigenere cifrada com \"%s\" se torna: ",
+              frase, chave);
+        vigenere(frase, chave);
+        puts(frase);
+        strcpy(par_plain_cipher.ciphertxt, frase);
+
         break;
-      
-      case 6: // Uma das versões se baseia em uma matriz 5x5 do alfabeto, tal que I == J.
-        printf("A frase \"%s\" em %s é: ", frase, cifras[choice - 1]);
-        
-        char polybius[26][3] = {"11", "12", "13", "14", "15", "21", "22", "23", "24", "24", "25", "31", "32", "33", 
-        "34", "35", "41", "42", "43", "44", "45", "51", "52", "53", "54", "55"};
-        char poly_ciphertxt[250] = "";
-        
-        for (int i = 0; i < strlen(frase); i++) {
-          int letter = (int)tolower(frase[i]);
-          
-          if (97 <= letter && letter <= 122) {
-            strcat(poly_ciphertxt, polybius[letter % 97]);
-            strcat(poly_ciphertxt, " ");
-          }
-          else if (letter == 32) {
-            strcat(poly_ciphertxt, "/ ");
-          }
-        }
-        
-        printf("%s\n", poly_ciphertxt);
-        strcpy(par.ciphertxt, poly_ciphertxt);
+
+      case 6: 
+        char *em_polibio = polibio(frase);
+
+        printf("A frase \"%s\" em Quadrado de Polibio se torna: ", frase);
+        puts(em_polibio);
+        strcpy(par_plain_cipher.ciphertxt, em_polibio);
+
         break;
     }
-    
-    fflush(stdin);
-    fprintf(fptr, "%s: plaintext: \"%s\"; ciphertext: \"%s\"\n", cifras[choice - 1], par.plaintext, par.ciphertxt);
+
+    if (strlen(par_plain_cipher.ciphertxt))
+      fprintf(fptr, "%s: plaintext: \"%s\"; ciphertext: \"%s\"\n",
+              cifras[choice - 1], par_plain_cipher.plaintext,
+              par_plain_cipher.ciphertxt);
     printf("Continuar?(Y/n) ");
-    
-    char continuar;
-    int cont_test = scanf("%c", &continuar);
-    
+
+    char continuar = getchar();
     continuar = tolower(continuar);
-    
+
     if (continuar == 'n') {
-      printf("Ok. Até mais!\n");
+      printf("Ok. Ate mais!\n");
       fclose(fptr);
       break;
     }
-    
-    test_sys_clr = sys_clr();
+
   }
-  
+
   return 0;
 }
